@@ -81,3 +81,18 @@ def seed_db():
         conn.commit()
     finally:
         conn.close()
+
+
+def create_user(name, email, password):
+    # Caller must pass a stripped, lower-cased email; the UNIQUE constraint
+    # is case-sensitive. sqlite3.IntegrityError propagates on duplicates.
+    conn = get_db()
+    try:
+        cursor = conn.execute(
+            "INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)",
+            (name, email, generate_password_hash(password)),
+        )
+        conn.commit()
+        return cursor.lastrowid
+    finally:
+        conn.close()
