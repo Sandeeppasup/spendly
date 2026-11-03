@@ -12,7 +12,7 @@ spendly/
 ├── app.py              # All routes — single file, no blueprints
 ├── expense_tracker.db  # SQLite file (gitignored), created by init_db()
 ├── database/
-│   └── db.py           # SQLite helpers: get_db(), init_db(), seed_db(), DB_PATH, CATEGORIES
+│   └── db.py           # SQLite helpers: get_db(), init_db(), seed_db(), create_user(), DB_PATH, CATEGORIES
 ├── templates/
 │   ├── base.html       # Shared layout — all templates must extend this
 │   └── *.html          # One template per page (landing, login, register, terms, privacy)
@@ -24,7 +24,11 @@ spendly/
 │       └── main.js         # Vanilla JS only
 ├── .claude/
 │   ├── commands/       # Project slash commands: /create-spec, /seed-user, /seed-expense
-│   └── specs/          # Feature specs, e.g. 01-database-setup.md
+│   └── specs/          # Feature specs: 01-database-setup.md, 02-registration.md
+├── tests/
+│   ├── conftest.py     # Redirects DB_PATH to a temp file; provides the `app` fixture
+│   ├── test_registration.py
+│   └── test_login.py
 └── requirements.txt
 ```
 
@@ -34,6 +38,7 @@ spendly/
 - `CATEGORIES`: Food, Transport, Bills, Health, Entertainment, Shopping, Other
 - `seed_db()` is a no-op once any user exists; otherwise inserts demo user `demo@spendly.com` / `demo123` with sample expenses
 - Passwords use `werkzeug.security.generate_password_hash`
+- `create_user(name, email, password)` hashes the password, inserts, and returns the new id. It does **not** normalise or catch errors: callers must pass a stripped, lower-cased email (the UNIQUE constraint is case-sensitive) and handle `sqlite3.IntegrityError` for duplicates
 
 **Where things belong:**
 - New routes → `app.py` only, no blueprints
@@ -84,11 +89,11 @@ pip install -r requirements.txt
 # Run dev server (port 5001)
 python app.py
 
-# Run all tests
+# Run all tests (use venv\Scripts\python.exe -m pytest if pytest isn't on PATH)
 pytest
 
 # Run a specific test file
-pytest tests/test_foo.py
+pytest tests/test_registration.py
 
 # Run a specific test by name
 pytest -k "test_name"
@@ -105,10 +110,12 @@ pytest -s
 |---|---|
 | `GET /` | Implemented — renders `landing.html` |
 | `GET /register` | Implemented — renders `register.html` |
-| `GET /login` | Implemented — renders `login.html` |
+| `POST /register` | Implemented (Step 2) — validates, calls `create_user()`, redirects to `/login`; re-renders with `error`, `name`, `email` on failure. No session is created |
+| `GET /login` | Implemented — renders `login.html`; redirects to `/` if already signed in |
+| `POST /login` | Implemented (Step 3) — verifies credentials, stores `user_id` in the session, redirects to `/`; re-renders with a generic `error` and `email` on failure |
 | `GET /terms` | Implemented — renders `terms.html` |
 | `GET /privacy` | Implemented — renders `privacy.html` |
-| `GET /logout` | Stub — Step 3 |
+| `GET /logout` | Implemented (Step 3) — clears the session, redirects to `/` |
 | `GET /profile` | Stub — Step 4 |
 | `GET /expenses/add` | Stub — Step 7 |
 | `GET /expenses/<id>/edit` | Stub — Step 8 |
@@ -129,4 +136,8 @@ pytest -s
 - **Never hardcode the DB filename** — import `get_db()`; `DB_PATH` in `db.py` resolves to `expense_tracker.db` in the project root
 - `get_db()` returns a new connection each call — always close it (`try/finally: conn.close()`)
 - Importing `app.py` runs `init_db()` and `seed_db()`, so it creates/seeds the DB as a side effect (including under pytest)
+- **Tests must not touch the real DB** — `tests/conftest.py` sets `database.db.DB_PATH` to a temp file *before* `from app import app`, because the import runs `init_db()`/`seed_db()`. Keep that ordering, and use the `app` fixture (it monkeypatches a fresh per-test DB)
+- `app.secret_key` comes from the `SECRET_KEY` env var, with an insecure dev-only fallback. The session stores only `user_id`; a `before_request` loader sets `g.current_user` and templates get `current_user` (`None` when signed out or the id is stale)
+- `get_user_by_email()` / `get_user_by_id()` in `db.py` return a `Row` or `None`; like `create_user()`, they do not normalise email — callers must `strip().lower()` first
 - The app runs on **port 5001**, not the Flask default 5000 — don't change this
+- The main branch is `master` (not `main`); `/create-spec` still says `main`, so adapt it
