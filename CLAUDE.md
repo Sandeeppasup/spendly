@@ -27,7 +27,8 @@ spendly/
 │   └── specs/          # Feature specs: 01-database-setup.md, 02-registration.md
 ├── tests/
 │   ├── conftest.py     # Redirects DB_PATH to a temp file; provides the `app` fixture
-│   └── test_registration.py
+│   ├── test_registration.py
+│   └── test_login.py
 └── requirements.txt
 ```
 
@@ -110,10 +111,11 @@ pytest -s
 | `GET /` | Implemented — renders `landing.html` |
 | `GET /register` | Implemented — renders `register.html` |
 | `POST /register` | Implemented (Step 2) — validates, calls `create_user()`, redirects to `/login`; re-renders with `error`, `name`, `email` on failure. No session is created |
-| `GET /login` | Implemented — renders `login.html` (`POST /login` is Step 3; `login.html` still has a hardcoded `action="/login"` to fix then) |
+| `GET /login` | Implemented — renders `login.html`; redirects to `/` if already signed in |
+| `POST /login` | Implemented (Step 3) — verifies credentials, stores `user_id` in the session, redirects to `/`; re-renders with a generic `error` and `email` on failure |
 | `GET /terms` | Implemented — renders `terms.html` |
 | `GET /privacy` | Implemented — renders `privacy.html` |
-| `GET /logout` | Stub — Step 3 |
+| `GET /logout` | Implemented (Step 3) — clears the session, redirects to `/` |
 | `GET /profile` | Stub — Step 4 |
 | `GET /expenses/add` | Stub — Step 7 |
 | `GET /expenses/<id>/edit` | Stub — Step 8 |
@@ -135,6 +137,7 @@ pytest -s
 - `get_db()` returns a new connection each call — always close it (`try/finally: conn.close()`)
 - Importing `app.py` runs `init_db()` and `seed_db()`, so it creates/seeds the DB as a side effect (including under pytest)
 - **Tests must not touch the real DB** — `tests/conftest.py` sets `database.db.DB_PATH` to a temp file *before* `from app import app`, because the import runs `init_db()`/`seed_db()`. Keep that ordering, and use the `app` fixture (it monkeypatches a fresh per-test DB)
-- No `secret_key` is configured yet, so Flask sessions and `flash()` don't work until Step 3 adds one
+- `app.secret_key` comes from the `SECRET_KEY` env var, with an insecure dev-only fallback. The session stores only `user_id`; a `before_request` loader sets `g.current_user` and templates get `current_user` (`None` when signed out or the id is stale)
+- `get_user_by_email()` / `get_user_by_id()` in `db.py` return a `Row` or `None`; like `create_user()`, they do not normalise email — callers must `strip().lower()` first
 - The app runs on **port 5001**, not the Flask default 5000 — don't change this
 - The main branch is `master` (not `main`); `/create-spec` still says `main`, so adapt it

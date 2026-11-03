@@ -83,6 +83,27 @@ def seed_db():
         conn.close()
 
 
+def get_user_by_email(email):
+    # Caller must pass a stripped, lower-cased email (matches create_user).
+    conn = get_db()
+    try:
+        return conn.execute(
+            "SELECT * FROM users WHERE email = ?", (email,)
+        ).fetchone()
+    finally:
+        conn.close()
+
+
+def get_user_by_id(user_id):
+    conn = get_db()
+    try:
+        return conn.execute(
+            "SELECT * FROM users WHERE id = ?", (user_id,)
+        ).fetchone()
+    finally:
+        conn.close()
+
+
 def create_user(name, email, password):
     # Caller must pass a stripped, lower-cased email; the UNIQUE constraint
     # is case-sensitive. sqlite3.IntegrityError propagates on duplicates.

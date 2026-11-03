@@ -1,0 +1,79 @@
+# Spec: Login and Logout
+
+## Overview
+Make `/login` functional and implement `/logout` so a registered user can sign in and out of Spendly. Today `GET /login` only renders a static form (with a hardcoded `action="/login"`) and `/logout` is a placeholder string. This step adds the `POST /login` handler (look up the user by email, verify the password hash, store the user id in the Flask session), replaces the `/logout` stub with a real session clear, configures the `secret_key` that sessions require, and makes the navbar reflect whether someone is signed in. It follows registration (Step 2), which creates accounts but deliberately does not sign anyone in, and is the prerequisite for every logged-in page (profile, add/edit/delete expense).
+
+## Depends on
+- Step 1 — Database setup (`users` table, `get_db()`, seeded demo user)
+- Step 2 — Registration (accounts to authenticate against; redirect target `/login`)
+
+## Routes
+- `GET /login` — render the sign-in form (already exists). If a user is already signed in, redirect to `url_for('landing')` — public
+- `POST /login` — validate credentials; on success store `user_id` in the session and redirect to `url_for('landing')`; on failure re-render the form with an error and HTTP 200 — public
+- `GET /logout` — clear the session and redirect to `url_for('landing')` — logged-in (harmless if called while signed out: it just redirects)
+
+The existing `login` view is extended to accept both methods. The existing `logout` stub is replaced. `/profile` and `/expenses/*` remain stubs and must not be touched; `/profile` is the natural post-login destination but belongs to Step 4, so landing is used for now.
+
+## Database changes
+No database changes. The existing `users` table already holds `email` and `password_hash`.
+
+New helper functions in `database/db.py` (DB logic must not live in routes):
+- `get_user_by_email(email)` — returns the matching `sqlite3.Row` or `None`; parameterised query; connection closed in `try/finally`. (Anticipated in the Step 2 spec but not yet added.)
+- `get_user_by_id(id)` — returns the matching `sqlite3.Row` or `None`; same rules. Used to load the current user for the navbar.
+
+Password verification (`check_password_hash`) happens in the route or a small helper, never by comparing hashes manually.
+
+## Templates
+- **Create:** none
+- **Modify:**
+  - `templates/login.html` — change `<form method="POST" action="/login">` to `action="{{ url_for('login') }}"`; re-populate the `email` input from a submitted value after a failed attempt (never the password)
+  - `templates/base.html` — navbar: when a user is signed in, show their name and a "Sign out" link to `url_for('logout')` instead of "Sign in" / "Get started"; otherwise keep the current links
+
+## Files to change
+- `app.py` — set `app.secret_key`; extend `login` to handle `POST`; implement `logout`; add a context processor (or `before_request` loader) exposing `current_user` to templates; import `session`, `check_password_hash`, and the new db helpers
+- `database/db.py` — add `get_user_by_email()` and `get_user_by_id()`
+- `templates/login.html` — see above
+- `templates/base.html` — see above
+- `CLAUDE.md` — update the routes table (login/logout implemented) and replace the "No `secret_key` is configured yet" warning
+
+## Files to create
+- `tests/test_login.py` — pytest tests covering the Definition of done (use the existing `app` fixture from `tests/conftest.py`; never the real DB)
+
+## New dependencies
+No new dependencies.
+
+## Rules for implementation
+- No SQLAlchemy or ORMs
+- Parameterised queries only — no f-strings or `%` formatting in SQL
+- Passwords verified with werkzeug `check_password_hash`; never compare, store, or log plain passwords
+- Use CSS variables — never hardcode hex values
+- All templates extend `base.html`
+- DB logic stays in `database/db.py`; routes only validate, call helpers, and redirect/render
+- `secret_key` must come from an environment variable (e.g. `SECRET_KEY`) with a clearly-labelled development fallback; do not commit a production secret
+- Normalise the submitted email (strip + lower-case) before lookup, matching how registration stores it
+- Use one generic error for both unknown email and wrong password ("Invalid email or password.") so account existence is not revealed
+- Store only `user_id` in the session; do not store the password or hash
+- On session creation, call `session.clear()` first to avoid carrying over stale session data
+- Re-render failures with HTTP 200 and the `error` variable the template already supports; no bare string returns
+- On success redirect (`302`) — Post/Redirect/Get
+- Do not implement `/profile`, `/expenses/*`, or any route-protection decorator beyond what this step needs
+- Do not use `flash()` unless it is rendered in `base.html`; the `error` variable is sufficient here
+- Keep the app on port 5001; main branch remains `master`
+
+## Definition of done
+- [ ] `GET /login` renders the form with status 200 and its form `action` is generated by `url_for`
+- [ ] Logging in as `demo@spendly.com` / `demo123` redirects (302) and the navbar then shows "Demo User" and a "Sign out" link instead of "Sign in" / "Get started"
+- [ ] A user created through `/register` can log in with the same credentials
+- [ ] Email is matched case-insensitively and ignoring surrounding whitespace (`  DEMO@Spendly.com ` works)
+- [ ] A wrong password and an unknown email both re-render the form with the identical "Invalid email or password." message and no session is created
+- [ ] After a failed attempt the email field keeps its value; the password field is empty
+- [ ] Missing/empty email or password does not crash and shows an error
+- [ ] `GET /logout` clears the session, redirects to `/`, and the navbar returns to "Sign in" / "Get started"
+- [ ] `GET /logout` while signed out redirects to `/` without error
+- [ ] Visiting `/login` while signed in redirects to `/` instead of showing the form
+- [ ] A session pointing at a non-existent user id is treated as signed out (no 500 error)
+- [ ] `app.secret_key` is set and read from the environment with a dev fallback
+- [ ] Every query added uses `?` placeholders; no hardcoded URLs in modified templates
+- [ ] Registration tests (`tests/test_registration.py`) still pass
+- [ ] `pytest tests/test_login.py` passes
+- [ ] `python app.py` starts without errors on port 5001
