@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - Spendly{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="profile-page">
+
+    <section class="profile-card profile-user" aria-labelledby="profile-name">
+        <div class="profile-avatar" aria-hidden="true">{{ user.initials }}</div>
+        <div class="profile-user-body">
+            <h1 class="profile-name" id="profile-name">{{ user.name }}</h1>
+            <dl class="profile-meta">
+                <div class="profile-meta-item">
+                    <dt>Email</dt>
+                    <dd>{{ user.email }}</dd>
+                </div>
+                <div class="profile-meta-item">
+                    <dt>Member since</dt>
+                    <dd>{{ user.member_since }}</dd>
+                </div>
+            </dl>
+        </div>
+    </section>
+
+    <section class="profile-stats" aria-label="Summary">
+        <div class="profile-card profile-stat">
+            <span class="profile-label">Total spent</span>
+            <span class="profile-stat-value">₹{{ stats.total_spent }}</span>
+        </div>
+        <div class="profile-card profile-stat">
+            <span class="profile-label">Transactions</span>
+            <span class="profile-stat-value">{{ stats.transaction_count }}</span>
+        </div>
+        <div class="profile-card profile-stat">
+            <span class="profile-label">Top category</span>
+            <span class="profile-stat-value">{{ stats.top_category }}</span>
+        </div>
+    </section>
+
+    <div class="profile-grid">
+        <section class="profile-card" aria-labelledby="profile-history">
+            <h2 class="profile-heading" id="profile-history">Transaction history</h2>
+            <div class="profile-table-wrap">
+                <table class="profile-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Date</th>
+                            <th scope="col">Description</th>
+                            <th scope="col">Category</th>
+                            <th scope="col" class="profile-num">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in transactions %}
+                        <tr>
+                            <td><time datetime="{{ t.iso }}">{{ t.date }}</time></td>
+                            <td>{{ t.description }}</td>
+                            <td><span class="profile-badge profile-badge--{{ t.category|lower }}">{{ t.category }}</span></td>
+                            <td class="profile-num">₹{{ t.amount }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="profile-card" aria-labelledby="profile-breakdown">
+            <h2 class="profile-heading" id="profile-breakdown">Spending by category</h2>
+            <ul class="profile-breakdown">
+                {% for c in categories %}
+                <li class="profile-breakdown-item">
+                    <div class="profile-breakdown-head">
+                        <span class="profile-breakdown-name">{{ c.name }}</span>
+                        <span class="profile-breakdown-amount">₹{{ c.amount }} · {{ c.pct }}%</span>
+                    </div>
+                    <div class="profile-bar-track" role="img" aria-label="{{ c.name }} {{ c.pct }} percent">
+                        <div class="profile-bar profile-bar--{{ c.name|lower }} profile-bar--w-{{ ((c.pct / 5)|round|int) * 5 }}"></div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </section>
+    </div>
+
+</div>
+{% endblock %}

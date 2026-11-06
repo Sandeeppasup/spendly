@@ -47,7 +47,7 @@ def test_login_template_has_no_hardcoded_urls():
 def test_demo_login_redirects_and_sets_session(client):
     resp = login(client, **DEMO)
     assert resp.status_code == 302
-    assert resp.headers["Location"].endswith("/")
+    assert resp.headers["Location"].endswith("/profile")
     assert session_user_id(client) == demo_id()
 
 
@@ -163,7 +163,9 @@ def test_logout_when_signed_out_redirects(client):
 
 def test_login_redirects_when_already_signed_in(client):
     login(client, **DEMO)
-    assert client.get("/login").status_code == 302
+    resp = client.get("/login")
+    assert resp.status_code == 302
+    assert resp.headers["Location"].endswith("/profile")
     assert login(client, **DEMO).status_code == 302
 
 
@@ -171,7 +173,7 @@ def test_register_redirects_when_already_signed_in(client):
     login(client, **DEMO)
     resp = client.get("/register")
     assert resp.status_code == 302
-    assert resp.headers["Location"].endswith("/")
+    assert resp.headers["Location"].endswith("/profile")
     before = len(fetch_all("SELECT id FROM users"))
     resp = client.post(
         "/register",

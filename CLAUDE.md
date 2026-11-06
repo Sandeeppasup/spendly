@@ -19,7 +19,8 @@ spendly/
 ├── static/
 │   ├── css/
 │   │   ├── style.css       # Global styles
-│   │   └── landing.css     # Landing-page-only styles
+│   │   ├── landing.css     # Landing-page-only styles
+│   │   └── profile.css     # Profile-page-only styles
 │   └── js/
 │       └── main.js         # Vanilla JS only
 ├── .claude/
@@ -28,7 +29,8 @@ spendly/
 ├── tests/
 │   ├── conftest.py     # Redirects DB_PATH to a temp file; provides the `app` fixture
 │   ├── test_registration.py
-│   └── test_login.py
+│   ├── test_login.py
+│   └── test_profile.py
 └── requirements.txt
 ```
 
@@ -111,12 +113,12 @@ pytest -s
 | `GET /` | Implemented — renders `landing.html` |
 | `GET /register` | Implemented — renders `register.html` |
 | `POST /register` | Implemented (Step 2) — validates, calls `create_user()`, redirects to `/login`; re-renders with `error`, `name`, `email` on failure. No session is created |
-| `GET /login` | Implemented — renders `login.html`; redirects to `/` if already signed in |
-| `POST /login` | Implemented (Step 3) — verifies credentials, stores `user_id` in the session, redirects to `/`; re-renders with a generic `error` and `email` on failure |
+| `GET /login` | Implemented — renders `login.html`; redirects to `/profile` if already signed in |
+| `POST /login` | Implemented (Step 3) — verifies credentials, stores `user_id` in the session, redirects to `/profile`; re-renders with a generic `error` and `email` on failure |
 | `GET /terms` | Implemented — renders `terms.html` |
 | `GET /privacy` | Implemented — renders `privacy.html` |
 | `GET /logout` | Implemented (Step 3) — clears the session, redirects to `/` |
-| `GET /profile` | Stub — Step 4 |
+| `GET /profile` | Implemented (Step 4) — renders `profile.html` with **hardcoded** placeholder data (real queries in Step 5); redirects to `/login` when signed out |
 | `GET /expenses/add` | Stub — Step 7 |
 | `GET /expenses/<id>/edit` | Stub — Step 8 |
 | `GET /expenses/<id>/delete` | Stub — Step 9 |
