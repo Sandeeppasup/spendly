@@ -29,7 +29,7 @@
     <section class="profile-stats" aria-label="Summary">
         <div class="profile-card profile-stat">
             <span class="profile-label">Total spent</span>
-            <span class="profile-stat-value">₹{{ stats.total_spent }}</span>
+            <span class="profile-stat-value">₹{{ stats.total_spent|inr }}</span>
         </div>
         <div class="profile-card profile-stat">
             <span class="profile-label">Transactions</span>
@@ -60,10 +60,15 @@
                             <td><time datetime="{{ t.iso }}">{{ t.date }}</time></td>
                             <td>{{ t.description }}</td>
                             <td><span class="profile-badge profile-badge--{{ t.category|lower }}">{{ t.category }}</span></td>
-                            <td class="profile-num">₹{{ t.amount }}</td>
+                            <td class="profile-num">₹{{ t.amount|inr }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
+                    {% if not transactions %}
+                    <tfoot>
+                        <tr><td colspan="4">No expenses yet.</td></tr>
+                    </tfoot>
+                    {% endif %}
                 </table>
             </div>
         </section>
@@ -75,7 +80,7 @@
                 <li class="profile-breakdown-item">
                     <div class="profile-breakdown-head">
                         <span class="profile-breakdown-name">{{ c.name }}</span>
-                        <span class="profile-breakdown-amount">₹{{ c.amount }} · {{ c.pct }}%</span>
+                        <span class="profile-breakdown-amount">₹{{ c.amount|inr }} ·{{ c.pct }}%</span>
                     </div>
                     <div class="profile-bar-track" role="img" aria-label="{{ c.name }} {{ c.pct }} percent">
                         <div class="profile-bar profile-bar--{{ c.name|lower }} profile-bar--w-{{ ((c.pct / 5)|round|int) * 5 }}"></div>

@@ -69,6 +69,37 @@ def test_profile_has_stats_table_and_breakdown(client):
     assert html.count("profile-breakdown-item") >= 3
 
 
+# ------------------------------------------------------------ real data
+
+
+def test_profile_demo_data(client):
+    login(client, **DEMO)
+    html = client.get("/profile").data.decode("utf-8")
+    assert "₹6,939.25" in html
+    assert "Shopping" in html
+    assert html.index("Lunch with friends") < html.index("Groceries")
+    assert html.count("profile-breakdown-item") == 7
+    assert "£" not in html and "$" not in html
+
+
+def test_profile_new_user_empty_state(client):
+    client.post(
+        "/register",
+        data={"name": "Asha Rao", "email": "asha@example.com", "password": "password123"},
+    )
+    login(client, email="asha@example.com", password="password123")
+    resp = client.get("/profile")
+    html = resp.data.decode("utf-8")
+    assert resp.status_code == 200
+    assert "₹0.00" in html
+    assert "Asha Rao" in html and "AR" in html
+    assert "Demo User" not in html
+    assert "—" in html
+    assert html.count("profile-breakdown-item") == 0
+    body = html.split("<tbody>")[1].split("</tbody>")[0]
+    assert "<tr>" not in body
+
+
 # ------------------------------------------------------- template hygiene
 
 

@@ -12,7 +12,8 @@ spendly/
 ├── app.py              # All routes — single file, no blueprints
 ├── expense_tracker.db  # SQLite file (gitignored), created by init_db()
 ├── database/
-│   └── db.py           # SQLite helpers: get_db(), init_db(), seed_db(), create_user(), DB_PATH, CATEGORIES
+│   ├── db.py           # SQLite helpers: get_db(), init_db(), seed_db(), create_user(), DB_PATH, CATEGORIES
+│   └── queries.py      # Profile-page read helpers (no Flask): get_user_by_id() (dict, not the db.py Row version), get_summary_stats(), get_recent_transactions(), get_category_breakdown()
 ├── templates/
 │   ├── base.html       # Shared layout — all templates must extend this
 │   └── *.html          # One template per page (landing, login, register, terms, privacy)
@@ -30,7 +31,8 @@ spendly/
 │   ├── conftest.py     # Redirects DB_PATH to a temp file; provides the `app` fixture
 │   ├── test_registration.py
 │   ├── test_login.py
-│   └── test_profile.py
+│   ├── test_profile.py
+│   └── test_backend_connection.py
 └── requirements.txt
 ```
 
@@ -118,7 +120,7 @@ pytest -s
 | `GET /terms` | Implemented — renders `terms.html` |
 | `GET /privacy` | Implemented — renders `privacy.html` |
 | `GET /logout` | Implemented (Step 3) — clears the session, redirects to `/` |
-| `GET /profile` | Implemented (Step 4) — renders `profile.html` with **hardcoded** placeholder data (real queries in Step 5); redirects to `/login` when signed out |
+| `GET /profile` | Implemented (Steps 4–5) — renders `profile.html` with the signed-in user's real data from `database/queries.py`; redirects to `/login` when signed out |
 | `GET /expenses/add` | Stub — Step 7 |
 | `GET /expenses/<id>/edit` | Stub — Step 8 |
 | `GET /expenses/<id>/delete` | Stub — Step 9 |

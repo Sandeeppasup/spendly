@@ -4,6 +4,10 @@ import sqlite3
 from flask import Flask, g, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash
 
+from database import queries
+
+# NOTE: db.get_user_by_id returns a sqlite3.Row for the session loader. The
+# profile card uses queries.get_user_by_id (a dict) — always call it qualified.
 from database.db import (
     create_user,
     get_user_by_email,
@@ -31,6 +35,39 @@ def load_current_user():
 @app.context_processor
 def inject_current_user():
     return {"current_user": g.get("current_user")}
+
+
+@app.template_filter("inr")
+def format_inr(value):
+    """Format a number as 1,234.50 (templates add the rupee sign)."""
+    return f"{float(value):,.2f}"
+
+
+def _initials(name):
+    words = name.split()
+    if not words:
+        return "?"
+    if len(words) == 1:
+        return words[0][0].upper()
+    return (words[0][0] + words[-1][0]).upper()
+
+
+# ==== BEGIN profile-transactions (subagent 1) ====
+def _profile_transactions(user_id):
+    return queries.get_recent_transactions(user_id)
+# ==== END profile-transactions ====
+
+
+# ==== BEGIN profile-stats (subagent 2) ====
+def _profile_stats(user_id):
+    return queries.get_summary_stats(user_id)
+# ==== END profile-stats ====
+
+
+# ==== BEGIN profile-categories (subagent 3) ====
+def _profile_categories(user_id):
+    return queries.get_category_breakdown(user_id)
+# ==== END profile-categories ====
 
 
 # ------------------------------------------------------------------ #
@@ -119,45 +156,18 @@ def profile():
     if not g.current_user:
         return redirect(url_for("login"))
 
-    # Hardcoded placeholder data — real queries arrive in Step 5.
-    user = {
-        "name": "Demo User",
-        "email": "demo@spendly.com",
-        "initials": "DU",
-        "member_since": "January 2026",
-    }
-    stats = {
-        "total_spent": "6,939.25",
-        "transaction_count": 8,
-        "top_category": "Shopping",
-    }
-    transactions = [
-        {"iso": "2026-11-08", "date": "08 Nov 2026", "description": "Lunch with friends", "category": "Food", "amount": "320.75"},
-        {"iso": "2026-11-07", "date": "07 Nov 2026", "description": "Miscellaneous", "category": "Other", "amount": "200.00"},
-        {"iso": "2026-11-06", "date": "06 Nov 2026", "description": "New shoes", "category": "Shopping", "amount": "2,499.00"},
-        {"iso": "2026-11-05", "date": "05 Nov 2026", "description": "Movie and dinner", "category": "Entertainment", "amount": "899.00"},
-        {"iso": "2026-11-04", "date": "04 Nov 2026", "description": "Pharmacy", "category": "Health", "amount": "650.00"},
-        {"iso": "2026-11-03", "date": "03 Nov 2026", "description": "Electricity bill", "category": "Bills", "amount": "1,800.00"},
-        {"iso": "2026-11-02", "date": "02 Nov 2026", "description": "Metro card recharge", "category": "Transport", "amount": "120.50"},
-        {"iso": "2026-11-01", "date": "01 Nov 2026", "description": "Groceries", "category": "Food", "amount": "450.00"},
-    ]
-    categories = [
-        {"name": "Shopping", "amount": "2,499.00", "pct": 36},
-        {"name": "Bills", "amount": "1,800.00", "pct": 26},
-        {"name": "Entertainment", "amount": "899.00", "pct": 13},
-        {"name": "Food", "amount": "770.75", "pct": 11},
-        {"name": "Health", "amount": "650.00", "pct": 9},
-        {"name": "Other", "amount": "200.00", "pct": 3},
-        {"name": "Transport", "amount": "120.50", "pct": 2},
-    ]
+    user_id = g.current_user["id"]
+    user = queries.get_user_by_id(user_id)
+    if user is None:
+        return redirect(url_for("login"))
+    user["initials"] = _initials(user["name"])
     return render_template(
         "profile.html",
         user=user,
-        stats=stats,
-        transactions=transactions,
-        categories=categories,
+        stats=_profile_stats(user_id),
+        transactions=_profile_transactions(user_id),
+        categories=_profile_categories(user_id),
     )
-
 
 @app.route("/expenses/add")
 def add_expense():
