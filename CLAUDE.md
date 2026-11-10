@@ -11,9 +11,10 @@ Spendly is a lightweight personal expense tracker built with Flask and SQLite.
 spendly/
 ├── app.py              # All routes — single file, no blueprints
 ├── expense_tracker.db  # SQLite file (gitignored), created by init_db()
+├── date_filters.py     # Profile date-filter helpers: parse_date_range(), format_range_label(), build_presets()
 ├── database/
 │   ├── db.py           # SQLite helpers: get_db(), init_db(), seed_db(), create_user(), DB_PATH, CATEGORIES
-│   └── queries.py      # Profile-page read helpers (no Flask): get_user_by_id() (dict, not the db.py Row version), get_summary_stats(), get_recent_transactions(), get_category_breakdown()
+│   └── queries.py      # Profile-page read helpers (no Flask): get_user_by_id() (dict, not the db.py Row version), get_summary_stats(), get_recent_transactions(), get_category_breakdown() — the last three take optional keyword-only `start`/`end` ISO dates (inclusive) via the private `_date_clause()`
 ├── templates/
 │   ├── base.html       # Shared layout — all templates must extend this
 │   └── *.html          # One template per page (landing, login, register, terms, privacy)
@@ -32,6 +33,7 @@ spendly/
 │   ├── test_registration.py
 │   ├── test_login.py
 │   ├── test_profile.py
+│   ├── test_profile_date_filter.py
 │   └── test_backend_connection.py
 └── requirements.txt
 ```
@@ -75,8 +77,11 @@ spendly/
 ## Subagent Policy
 - Always use a builtin explore subagent for codebase exploration 
   before implementing any new feature
-- Always use a subagent to verify test results 
-  after any implementation
+- Never auto-launch the custom subagents in `.claude/agents/`
+  (test-writer, test-runner, quality-reviewer, security-reviewer).
+  The user runs them manually after implementation via
+  `/test-feature <spec>` and `/code-review-feature <spec>`.
+  After implementing, stop and report instead
 - When asked to plan, delegate codebase research 
   to a subagent before presenting the plan
 - always use a builtin plan subagent in plan mode
@@ -120,7 +125,7 @@ pytest -s
 | `GET /terms` | Implemented — renders `terms.html` |
 | `GET /privacy` | Implemented — renders `privacy.html` |
 | `GET /logout` | Implemented (Step 3) — clears the session, redirects to `/` |
-| `GET /profile` | Implemented (Steps 4–5) — renders `profile.html` with the signed-in user's real data from `database/queries.py`; redirects to `/login` when signed out |
+| `GET /profile` | Implemented (Steps 4–6) — renders `profile.html` with the signed-in user's real data from `database/queries.py`; redirects to `/login` when signed out. Accepts optional `?start=YYYY-MM-DD&end=YYYY-MM-DD` (inclusive); blank = absent, invalid or reversed dates show an inline error and are ignored |
 | `GET /expenses/add` | Stub — Step 7 |
 | `GET /expenses/<id>/edit` | Stub — Step 8 |
 | `GET /expenses/<id>/delete` | Stub — Step 9 |

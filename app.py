@@ -5,6 +5,7 @@ from flask import Flask, g, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash
 
 from database import queries
+from date_filters import build_presets, format_range_label, parse_date_range
 
 # NOTE: db.get_user_by_id returns a sqlite3.Row for the session loader. The
 # profile card uses queries.get_user_by_id (a dict) — always call it qualified.
@@ -50,24 +51,6 @@ def _initials(name):
     if len(words) == 1:
         return words[0][0].upper()
     return (words[0][0] + words[-1][0]).upper()
-
-
-# ==== BEGIN profile-transactions (subagent 1) ====
-def _profile_transactions(user_id):
-    return queries.get_recent_transactions(user_id)
-# ==== END profile-transactions ====
-
-
-# ==== BEGIN profile-stats (subagent 2) ====
-def _profile_stats(user_id):
-    return queries.get_summary_stats(user_id)
-# ==== END profile-stats ====
-
-
-# ==== BEGIN profile-categories (subagent 3) ====
-def _profile_categories(user_id):
-    return queries.get_category_breakdown(user_id)
-# ==== END profile-categories ====
 
 
 # ------------------------------------------------------------------ #
@@ -161,12 +144,18 @@ def profile():
     if user is None:
         return redirect(url_for("login"))
     user["initials"] = _initials(user["name"])
+    start, end, date_error = parse_date_range(request.args)
     return render_template(
         "profile.html",
         user=user,
-        stats=_profile_stats(user_id),
-        transactions=_profile_transactions(user_id),
-        categories=_profile_categories(user_id),
+        stats=queries.get_summary_stats(user_id, start=start, end=end),
+        transactions=queries.get_recent_transactions(user_id, start=start, end=end),
+        categories=queries.get_category_breakdown(user_id, start=start, end=end),
+        start=start,
+        end=end,
+        date_error=date_error,
+        presets=build_presets(start, end),
+        range_label=format_range_label(start, end),
     )
 
 @app.route("/expenses/add")
