@@ -7,6 +7,8 @@
 {% endblock %}
 
 {% block content %}
+{% set is_filtered = start or end %}
+{% set empty_text = 'No expenses in this period.' if is_filtered else 'No expenses yet.' %}
 <div class="profile-page">
 
     <section class="profile-card profile-user" aria-labelledby="profile-name">
@@ -24,6 +26,32 @@
                 </div>
             </dl>
         </div>
+    </section>
+
+    <section class="profile-card profile-filter" aria-label="Filter by date">
+        <form class="profile-filter-form" method="get" action="{{ url_for('profile') }}">
+            <div class="profile-filter-field">
+                <label class="profile-label" for="filter-start">From</label>
+                <input class="form-input" type="date" id="filter-start" name="start" value="{{ start or '' }}">
+            </div>
+            <div class="profile-filter-field">
+                <label class="profile-label" for="filter-end">To</label>
+                <input class="form-input" type="date" id="filter-end" name="end" value="{{ end or '' }}">
+            </div>
+            <div class="profile-filter-actions">
+                <button type="submit" class="btn-primary">Apply</button>
+                <a class="btn-ghost" href="{{ url_for('profile') }}">Clear</a>
+            </div>
+        </form>
+        <nav class="profile-presets" aria-label="Quick ranges">
+            {% for p in presets %}
+            <a class="profile-preset{% if p.active %} profile-preset--active{% endif %}"
+               href="{{ p.url }}"
+               {%- if p.active %} aria-current="page"{% endif %}>{{ p.label }}</a>
+            {% endfor %}
+        </nav>
+        {% if date_error %}<p class="profile-filter-error" role="alert">{{ date_error }}</p>{% endif %}
+        {% if range_label %}<p class="profile-filter-note">{{ range_label }}</p>{% endif %}
     </section>
 
     <section class="profile-stats" aria-label="Summary">
@@ -66,7 +94,7 @@
                     </tbody>
                     {% if not transactions %}
                     <tfoot>
-                        <tr><td colspan="4">No expenses yet.</td></tr>
+                        <tr><td colspan="4">{{ empty_text }}</td></tr>
                     </tfoot>
                     {% endif %}
                 </table>
@@ -88,6 +116,9 @@
                 </li>
                 {% endfor %}
             </ul>
+            {% if not categories %}
+            <p class="profile-empty">{{ empty_text }}</p>
+            {% endif %}
         </section>
     </div>
 
