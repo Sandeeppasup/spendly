@@ -158,6 +158,13 @@ def profile():
         range_label=format_range_label(start, end),
     )
 
+@app.route("/analytics")
+def analytics():
+    if not g.current_user:
+        return redirect(url_for("login"))
+    return render_template("analytics.html")
+
+
 @app.route("/expenses/add")
 def add_expense():
     return "Add expense — coming in Step 7"
