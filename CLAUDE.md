@@ -12,8 +12,9 @@ spendly/
 ├── app.py              # All routes — single file, no blueprints
 ├── expense_tracker.db  # SQLite file (gitignored), created by init_db()
 ├── date_filters.py     # Profile date-filter helpers: parse_date_range(), format_range_label(), build_presets()
+├── expense_validation.py # Add-expense form validation (pure, no Flask/SQLite): validate_expense_form(form) -> (cleaned, error)
 ├── database/
-│   ├── db.py           # SQLite helpers: get_db(), init_db(), seed_db(), create_user(), DB_PATH, CATEGORIES
+│   ├── db.py           # SQLite helpers: get_db(), init_db(), seed_db(), create_user(), create_expense() (no validation — callers pass validated values), DB_PATH, CATEGORIES
 │   └── queries.py      # Profile-page read helpers (no Flask): get_user_by_id() (dict, not the db.py Row version), get_summary_stats(), get_recent_transactions(), get_category_breakdown() — the last three take optional keyword-only `start`/`end` ISO dates (inclusive) via the private `_date_clause()`
 ├── templates/
 │   ├── base.html       # Shared layout — all templates must extend this
@@ -22,7 +23,8 @@ spendly/
 │   ├── css/
 │   │   ├── style.css       # Global styles
 │   │   ├── landing.css     # Landing-page-only styles
-│   │   └── profile.css     # Profile-page-only styles
+│   │   ├── profile.css     # Profile-page-only styles
+│   │   └── expense_form.css # Add-expense-page-only styles
 │   └── js/
 │       └── main.js         # Vanilla JS only
 ├── .claude/
@@ -34,6 +36,7 @@ spendly/
 │   ├── test_login.py
 │   ├── test_profile.py
 │   ├── test_profile_date_filter.py
+│   ├── test_add_expense.py
 │   └── test_backend_connection.py
 └── requirements.txt
 ```
@@ -126,7 +129,7 @@ pytest -s
 | `GET /privacy` | Implemented — renders `privacy.html` |
 | `GET /logout` | Implemented (Step 3) — clears the session, redirects to `/` |
 | `GET /profile` | Implemented (Steps 4–6) — renders `profile.html` with the signed-in user's real data from `database/queries.py`; redirects to `/login` when signed out. Accepts optional `?start=YYYY-MM-DD&end=YYYY-MM-DD` (inclusive); blank = absent, invalid or reversed dates show an inline error and are ignored |
-| `GET /expenses/add` | Stub — Step 7 |
+| `GET/POST /expenses/add` | Implemented (Step 7) — logged-in only (redirects to `/login` when signed out); GET renders `add_expense.html`, POST validates via `expense_validation.validate_expense_form()`, calls `create_expense()` and redirects to `/profile`; re-renders with `error` and the submitted values on failure |
 | `GET /expenses/<id>/edit` | Stub — Step 8 |
 | `GET /expenses/<id>/delete` | Stub — Step 9 |
 

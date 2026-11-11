@@ -33,6 +33,18 @@
     margin-bottom: 1.5rem;
 }
 
+.profile-heading-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.profile-heading-row .profile-heading {
+    margin-bottom: 0;
+}
+
 /* ---- User card ---- */
 
 .profile-user {
