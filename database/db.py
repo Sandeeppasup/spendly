@@ -104,6 +104,25 @@ def get_user_by_id(user_id):
         conn.close()
 
 
+def create_expense(user_id, amount, category, expense_date, description):
+    """Insert an expense and return its new id.
+
+    Does not validate: callers must pass already-validated values (see
+    expense_validation.validate_expense_form). expense_date is ISO text.
+    """
+    conn = get_db()
+    try:
+        cursor = conn.execute(
+            "INSERT INTO expenses (user_id, amount, category, date, description)"
+            " VALUES (?, ?, ?, ?, ?)",
+            (user_id, amount, category, expense_date, description),
+        )
+        conn.commit()
+        return cursor.lastrowid
+    finally:
+        conn.close()
+
+
 def create_user(name, email, password):
     # Caller must pass a stripped, lower-cased email; the UNIQUE constraint
     # is case-sensitive. sqlite3.IntegrityError propagates on duplicates.

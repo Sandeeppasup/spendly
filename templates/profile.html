@@ -71,7 +71,10 @@
 
     <div class="profile-grid">
         <section class="profile-card" aria-labelledby="profile-history">
-            <h2 class="profile-heading" id="profile-history">Transaction history</h2>
+            <div class="profile-heading-row">
+                <h2 class="profile-heading" id="profile-history">Transaction history</h2>
+                <a class="btn-primary" href="{{ url_for('add_expense') }}">Add expense</a>
+            </div>
             <div class="profile-table-wrap">
                 <table class="profile-table">
                     <thead>
@@ -94,7 +97,7 @@
                     </tbody>
                     {% if not transactions %}
                     <tfoot>
-                        <tr><td colspan="4">{{ empty_text }}</td></tr>
+                        <tr><td colspan="4">{{ empty_text }} <a href="{{ url_for('add_expense') }}">Add expense</a></td></tr>
                     </tfoot>
                     {% endif %}
                 </table>

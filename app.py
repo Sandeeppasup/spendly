@@ -1,15 +1,19 @@
 import os
 import sqlite3
+from datetime import date
 
 from flask import Flask, g, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash
 
 from database import queries
 from date_filters import build_presets, format_range_label, parse_date_range
+from expense_validation import MAX_DESCRIPTION, validate_expense_form
 
 # NOTE: db.get_user_by_id returns a sqlite3.Row for the session loader. The
 # profile card uses queries.get_user_by_id (a dict) — always call it qualified.
 from database.db import (
+    CATEGORIES,
+    create_expense,
     create_user,
     get_user_by_email,
     get_user_by_id,
@@ -21,6 +25,9 @@ app = Flask(__name__)
 # Set SECRET_KEY in the environment for any real deployment. The fallback is
 # for local development only and must not be relied on in production.
 app.secret_key = os.environ.get("SECRET_KEY", "dev-only-insecure-key-change-me")
+# Reject oversized request bodies (413) before any form parsing.
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
 with app.app_context():
     init_db()
@@ -165,9 +172,27 @@ def analytics():
     return render_template("analytics.html")
 
 
-@app.route("/expenses/add")
+@app.route("/expenses/add", methods=["GET", "POST"])
 def add_expense():
-    return "Add expense — coming in Step 7"
+    if not g.current_user:
+        return redirect(url_for("login"))
+
+    error = None
+    if request.method == "POST":
+        cleaned, error = validate_expense_form(request.form)
+        if error is None:
+            create_expense(g.current_user["id"], **cleaned)
+            return redirect(url_for("profile"))
+
+    form = request.form if request.method == "POST" else {}
+    return render_template(
+        "add_expense.html",
+        max_description=MAX_DESCRIPTION,
+        categories=CATEGORIES,
+        today=date.today().isoformat(),
+        form=form,
+        error=error,
+    )
 
 
 @app.route("/expenses/<int:id>/edit")
