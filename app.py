@@ -2,7 +2,7 @@ import os
 import sqlite3
 from datetime import date
 
-from flask import Flask, g, redirect, render_template, request, session, url_for
+from flask import Flask, abort, g, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash
 
 from database import queries
@@ -15,10 +15,12 @@ from database.db import (
     CATEGORIES,
     create_expense,
     create_user,
+    get_expense,
     get_user_by_email,
     get_user_by_id,
     init_db,
     seed_db,
+    update_expense,
 )
 
 app = Flask(__name__)
@@ -195,9 +197,40 @@ def add_expense():
     )
 
 
-@app.route("/expenses/<int:id>/edit")
+@app.route("/expenses/<int:id>/edit", methods=["GET", "POST"])
 def edit_expense(id):
-    return "Edit expense — coming in Step 8"
+    if not g.current_user:
+        return redirect(url_for("login"))
+
+    user_id = g.current_user["id"]
+    expense = get_expense(id, user_id)
+    if expense is None:
+        abort(404)
+
+    error = None
+    if request.method == "POST":
+        cleaned, error = validate_expense_form(request.form)
+        if error is None:
+            if not update_expense(id, user_id, **cleaned):
+                abort(404)
+            return redirect(url_for("profile"))
+        form = request.form
+    else:
+        form = {
+            "amount": f"{expense['amount']:.2f}",
+            "category": expense["category"],
+            "date": expense["date"],
+            "description": expense["description"] or "",
+        }
+
+    return render_template(
+        "edit_expense.html",
+        expense_id=id,
+        max_description=MAX_DESCRIPTION,
+        categories=CATEGORIES,
+        form=form,
+        error=error,
+    )
 
 
 @app.route("/expenses/<int:id>/delete")

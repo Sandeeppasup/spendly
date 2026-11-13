@@ -542,11 +542,6 @@ class TestProfileLink:
 
 
 class TestStubsUnchanged:
-    def test_edit_route_is_still_stub(self, client):
-        resp = client.get("/expenses/1/edit")
-        assert resp.status_code == 200
-        assert b"Step 8" in resp.data
-
     def test_delete_route_is_still_stub(self, client):
         resp = client.get("/expenses/1/delete")
         assert resp.status_code == 200
@@ -555,7 +550,6 @@ class TestStubsUnchanged:
     def test_stubs_do_not_modify_expenses(self, client):
         login_demo(client)
         before = expense_count()
-        client.get("/expenses/1/edit")
         client.get("/expenses/1/delete")
         assert expense_count() == before
 

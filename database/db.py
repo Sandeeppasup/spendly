@@ -123,6 +123,38 @@ def create_expense(user_id, amount, category, expense_date, description):
         conn.close()
 
 
+def get_expense(expense_id, user_id):
+    """Return the expense Row only if it belongs to user_id, else None."""
+    conn = get_db()
+    try:
+        return conn.execute(
+            "SELECT * FROM expenses WHERE id = ? AND user_id = ?",
+            (expense_id, user_id),
+        ).fetchone()
+    finally:
+        conn.close()
+
+
+def update_expense(expense_id, user_id, amount, category, expense_date, description):
+    """Update an owned expense; return True if a row changed, else False.
+
+    Does not validate: callers must pass already-validated values (see
+    expense_validation.validate_expense_form). user_id and created_at are
+    never modified.
+    """
+    conn = get_db()
+    try:
+        cursor = conn.execute(
+            "UPDATE expenses SET amount = ?, category = ?, date = ?, description = ?"
+            " WHERE id = ? AND user_id = ?",
+            (amount, category, expense_date, description, expense_id, user_id),
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+    finally:
+        conn.close()
+
+
 def create_user(name, email, password):
     # Caller must pass a stripped, lower-cased email; the UNIQUE constraint
     # is case-sensitive. sqlite3.IntegrityError propagates on duplicates.

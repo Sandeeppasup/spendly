@@ -44,7 +44,7 @@ def get_recent_transactions(user_id, limit=10, *, start=None, end=None):
     conn = get_db()
     try:
         rows = conn.execute(
-            "SELECT date, description, category, amount FROM expenses "
+            "SELECT id, date, description, category, amount FROM expenses "
             "WHERE user_id = ?" + clause + " ORDER BY date DESC, id DESC LIMIT ?",
             (user_id, *params, limit),
         ).fetchall()
@@ -52,6 +52,7 @@ def get_recent_transactions(user_id, limit=10, *, start=None, end=None):
         conn.close()
     return [
         {
+            "id": row["id"],
             "iso": row["date"],
             "date": datetime.strptime(row["date"], "%Y-%m-%d").strftime("%d %b %Y"),
             "description": row["description"] or "",
