@@ -12,3 +12,36 @@
     width: auto;
     margin-top: 0;
 }
+
+/* Delete-confirmation page */
+
+.expense-summary {
+    margin: 0 0 1.25rem;
+}
+
+.expense-summary-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border-soft);
+}
+
+.expense-summary-row dt {
+    color: var(--ink-muted);
+}
+
+.expense-summary-row dd {
+    margin: 0;
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+.btn-danger {
+    background: var(--danger);
+}
+
+.btn-danger:hover {
+    background: var(--danger);
+    opacity: 0.9;
+}
