@@ -15,6 +15,7 @@ from database.db import (
     CATEGORIES,
     create_expense,
     create_user,
+    delete_expense as remove_expense,
     get_expense,
     get_user_by_email,
     get_user_by_id,
@@ -233,9 +234,22 @@ def edit_expense(id):
     )
 
 
-@app.route("/expenses/<int:id>/delete")
+@app.route("/expenses/<int:id>/delete", methods=["GET", "POST"])
 def delete_expense(id):
-    return "Delete expense — coming in Step 9"
+    if not g.current_user:
+        return redirect(url_for("login"))
+
+    user_id = g.current_user["id"]
+    expense = get_expense(id, user_id)
+    if expense is None:
+        abort(404)
+
+    if request.method == "POST":
+        if not remove_expense(id, user_id):
+            abort(404)
+        return redirect(url_for("profile"))
+
+    return render_template("delete_expense.html", expense=expense, expense_id=id)
 
 
 if __name__ == "__main__":
