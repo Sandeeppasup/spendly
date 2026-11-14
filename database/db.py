@@ -155,6 +155,20 @@ def update_expense(expense_id, user_id, amount, category, expense_date, descript
         conn.close()
 
 
+def delete_expense(expense_id, user_id):
+    """Delete an owned expense; return True if a row was deleted, else False."""
+    conn = get_db()
+    try:
+        cursor = conn.execute(
+            "DELETE FROM expenses WHERE id = ? AND user_id = ?",
+            (expense_id, user_id),
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+    finally:
+        conn.close()
+
+
 def create_user(name, email, password):
     # Caller must pass a stripped, lower-cased email; the UNIQUE constraint
     # is case-sensitive. sqlite3.IntegrityError propagates on duplicates.

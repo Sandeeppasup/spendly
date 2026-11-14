@@ -223,8 +223,16 @@
     text-decoration: none;
 }
 
-.edit-link:hover {
+.edit-link:hover,
+.delete-link:hover {
     text-decoration: underline;
+}
+
+.delete-link {
+    color: var(--danger);
+    font-size: 0.85rem;
+    text-decoration: none;
+    margin-left: 0.75rem;
 }
 
 /* ---- Category badges ---- */

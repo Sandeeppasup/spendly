@@ -372,8 +372,3 @@ class TestRegression:
             data={"amount": "10", "category": "Food", "date": "2026-03-01", "description": "x"},
         )
         assert resp.status_code == 302
-
-    def test_delete_route_is_still_stub(self, client):
-        resp = client.get("/expenses/1/delete")
-        assert resp.status_code == 200
-        assert b"Step 9" in resp.data
